@@ -29,9 +29,6 @@ W = tf.Variable(0.01*tf.random_normal([n_input, n_hidden_1]))
 bh = tf.Variable(0.01*tf.random_normal([n_hidden_1]))
 bv = tf.Variable(0.01*tf.random_normal([n_input]))
 
-DW = tf.Variable(tf.zeros([n_input, n_hidden_1]))
-Dbh = tf.Variable(tf.zeros([n_hidden_1]))
-Dbv = tf.Variable(tf.zeros([n_input]))
 
 def sample_prob(probs, rand):
     return tf.nn.relu(tf.sign(probs - rand))
