@@ -10,7 +10,7 @@ import tensorflow as tf
 
 # Parameters
 learning_rate = 0.01
-training_epochs = 100
+training_epochs = 20
 batch_size = 100
 display_step = 1
 n_chain = 20
@@ -58,12 +58,13 @@ def do_chain():
     for i in xrange(n_chain):
         h_prob,h_samples = get_h_given_x(W,bh,v_prob)
         v_prob,v_samples = get_x_given_h(W,bv,h_prob)
-    return v_samples
+    return v_samples,v_prob
 
 
-v_samples = do_chain()
+v_samples,v_prob = do_chain()
 
 cost = tf.reduce_mean(free_energy(x))- tf.reduce_mean(free_energy(v_samples))
+#optimizer = tf.train.GradientDescentOptimizer(learning_rate=learning_rate).minimize(cost)
 optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(cost)
 tf.stop_gradient(v_samples) 
 reconst_error = tf.reduce_mean(tf.reduce_sum(tf.square(tf.subtract(x, v_samples)),axis=1))
@@ -134,11 +135,12 @@ with tf.Session() as sess:
     batch_x, batch_y = mnist.test.next_batch(batch_size)
     batch_x = (batch_x > 0.0).astype('float')
     # Run optimization for contrastive divergance
-    vrec,rec,c = sess.run([v_samples,reconst_error,cost], feed_dict={x: batch_x,
+    vrec,rec,c = sess.run([v_prob,reconst_error,cost], feed_dict={x: batch_x,
                             hrand: np.random.rand(batch_size,n_hidden_1),
                             vrand: np.random.rand(batch_size,n_input)
                             })    
     for ii in xrange(64):
         plt.subplot(8,8,ii+1)
-        plt.imshow(vrec[ii,:].reshape((28,28)),cmap='gray')     
+        plt.imshow(vrec[ii,:].reshape((28,28)),cmap='gray') 
+        plt.axis('off')
     plt.show()
