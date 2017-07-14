@@ -1,7 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib
-matplotlib.interactive(True)
 
 # Import MNIST data
 from tensorflow.examples.tutorials.mnist import input_data
@@ -11,7 +10,7 @@ import tensorflow as tf
 
 # Parameters
 learning_rate = 0.01
-training_epochs = 40
+training_epochs = 100
 batch_size = 100
 display_step = 1
 n_chain = 20
@@ -78,8 +77,10 @@ init = tf.global_variables_initializer()
 # Launch the graph
 with tf.Session() as sess:
     sess.run(init)
-
-    # Training cycle
+    
+    #=================
+    # TRAINING CYCLES
+    #=================
     for epoch in range(training_epochs):
         avg_cost = 0.
         avg_rec = 0.0
@@ -103,12 +104,44 @@ with tf.Session() as sess:
                   "cost=", "{:.9f}".format(avg_cost),
                   "Rec=", "{:.9f}".format(avg_rec)
                   )
-            for ii in xrange(9):
-                plt.subplot(3,3,ii+1)
-                plt.imshow(vrec[ii,:].reshape((28,28)),cmap='gray')
-            plt.pause(0.001)
-            plt.clf()            
+                      
     print("Optimization Finished!")
-
-    # Test model
-
+    
+    #=================
+    #   TEST MODEL
+    #=================
+    avg_cost = 0.
+    avg_rec = 0.0
+    total_batch = int(mnist.test.num_examples/batch_size)
+    # Loop over all batches
+    for i in range(total_batch):
+        batch_x, batch_y = mnist.test.next_batch(batch_size)
+        batch_x = (batch_x > 0.0).astype('float')
+        # Run optimization for contrastive divergance
+        vrec,rec,c = sess.run([v_samples,reconst_error,cost], feed_dict={x: batch_x,
+                                         hrand: np.random.rand(batch_size,n_hidden_1),
+                                         vrand: np.random.rand(batch_size,n_input)
+                                         })
+        avg_cost += c / total_batch
+        avg_rec += rec / total_batch
+        
+    print( "Test avg cost=", "{:.9f}".format(avg_cost),
+          "Test avg Rec=", "{:.9f}".format(avg_rec)
+          )   
+    
+    #==================
+    # SAMPLE FROM MODEL
+    #==================
+    # generate images with 1000 gibbs sampling from the model distribution
+    n_chain = 1000
+    batch_x, batch_y = mnist.test.next_batch(batch_size)
+    batch_x = (batch_x > 0.0).astype('float')
+    # Run optimization for contrastive divergance
+    vrec,rec,c = sess.run([v_samples,reconst_error,cost], feed_dict={x: batch_x,
+                            hrand: np.random.rand(batch_size,n_hidden_1),
+                            vrand: np.random.rand(batch_size,n_input)
+                            })    
+    for ii in xrange(64):
+        plt.subplot(8,8,ii+1)
+        plt.imshow(vrec[ii,:].reshape((28,28)),cmap='gray')     
+    plt.show()
